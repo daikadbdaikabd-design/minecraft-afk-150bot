@@ -1,16 +1,21 @@
 {
   "name": "afk-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Minecraft AFK Bot 24/7",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
+  "keywords": [
+    "minecraft",
+    "mineflayer",
+    "afk-bot"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "express": "^4.19.2",
     "mineflayer": "^4.35.0"
   }
 }
