@@ -1,87 +1,84 @@
 const mineflayer = require("mineflayer");
-const express = require("express");
 const { SocksProxyAgent } = require("socks-proxy-agent");
+const express = require("express");
 
 // --- CẤU HÌNH ---
-const SETTINGS = {
+const SERVER = {
   host: "darkblademc.joinmc.world",
   port: 20674,
   version: "1.20.1",
   password: "bot123",
-  botCount: 150,
-  prefix: "_HuuThien_",
-  loginDelay: 2500, // Nghỉ 2.5s mỗi con để tránh bị kick "Too many logins"
+  count: 150
 };
 
-// DANH SÁCH PROXY (Nếu không có proxy, 150 con sẽ bị ban IP ngay lập tức)
-// Thay bằng proxy của bạn: "socks5://user:pass@ip:port"
+// --- DANH SÁCH PROXY (Dán list proxy SOCKS5 của bạn vào đây) ---
+// Định dạng: 'socks5://ip:port' hoặc 'socks5://user:pass@ip:port'
 const proxies = [
-  // "socks5://1.2.3.4:1080", 
+  // 'socks5://103.123.456.1:1080',
+  // 'socks5://103.123.456.2:1080',
 ];
 
-function createBot(id) {
-  const username = `${SETTINGS.prefix}${id}`;
+function startBot(id) {
+  const username = `_HuuThien_${id}`;
+
+  // Chọn proxy xoay vòng từ danh sách
   const proxy = proxies.length > 0 ? proxies[id % proxies.length] : null;
   const agent = proxy ? new SocksProxyAgent(proxy) : null;
 
-  console.log(`[#] Đang kết nối Bot: ${username}...`);
-
   const bot = mineflayer.createBot({
-    host: SETTINGS.host,
-    port: SETTINGS.port,
+    host: SERVER.host,
+    port: SERVER.port,
     username: username,
-    version: SETTINGS.version,
-    agent: agent,
-    // TỐI ƯU CỰC MẠNH: Tắt xử lý vật lý để không tốn RAM/CPU
-    physicsEnabled: false,
-    checkTimeoutInterval: 60000
+    version: SERVER.version,
+    agent: agent, // Đây là "tấm khiên" để không bị trùng IP
+    physicsEnabled: false, // Tắt vật lý để Render không bị nổ RAM
   });
 
-  // Xử lý khi vào server
-  bot.on("spawn", () => {
-    console.log(`[√] ${username} đã vào world.`);
-    
-    // Auto Login / Register
-    setTimeout(() => bot.chat(`/register ${SETTINGS.password} ${SETTINGS.password}`), 2000);
-    setTimeout(() => bot.chat(`/login ${SETTINGS.password}`), 4000);
+  bot.once("spawn", () => {
+    console.log(`[+] ${username} đã vào server thành công.`);
 
-    // Vòng lặp Chống AFK (5 giây/lần)
-    const afkInterval = setInterval(() => {
-      if (!bot.entity) return;
-      bot.setControlState("jump", true);
-      bot.look(Math.random() * 6, (Math.random() - 0.5));
-      setTimeout(() => bot.setControlState("jump", false), 500);
-    }, 5000);
+    // Auto Login/Register
+    setTimeout(() => bot.chat(`/register ${SERVER.password} ${SERVER.password}`), 3000);
+    setTimeout(() => bot.chat(`/login ${SERVER.password}`), 5000);
 
-    bot.once("end", () => clearInterval(afkInterval));
+    // Hành động AFK
+    setInterval(() => {
+      if (bot.entity) {
+        bot.setControlState("jump", true);
+        bot.look(Math.random() * 6.2, 0);
+        setTimeout(() => bot.setControlState("jump", false), 200);
+      }
+    }, 10000);
   });
 
-  // Tự động trả lời nếu server yêu cầu login trong chat
-  bot.on("chat", (user, msg) => {
-    if (msg.includes("/login")) bot.chat(`/login ${SETTINGS.password}`);
-  });
-
-  // Tự động kết nối lại nếu bị văng
+  // Xử lý khi bị văng (do Anti-bot hoặc Lag)
   bot.on("end", (reason) => {
-    console.log(`[!] ${username} thoát (${reason}). Reconnect sau 20s...`);
-    setTimeout(() => createBot(id), 20000);
+    // Không hiện log đỏ nếu chỉ là ngắt kết nối thông thường
+    if (reason !== 'socketClosed') {
+        console.log(`[-] ${username} thoát: ${reason}. Thử lại sau 15s...`);
+    }
+    setTimeout(() => startBot(id), 15000);
   });
 
-  bot.on("error", (err) => console.log(`[X] Lỗi ${username}: ${err.message}`));
+  bot.on("error", (err) => {
+    // Chỉ hiện lỗi quan trọng, tránh spam log ECONNRESET
+    if (err.code !== 'ECONNRESET') {
+        console.log(`[!] Lỗi ${username}: ${err.message}`);
+    }
+  });
 }
 
-// Hàm khởi chạy hàng loạt
-async function startSpam() {
-  for (let i = 1; i <= SETTINGS.botCount; i++) {
-    createBot(i);
-    // Chờ một chút trước khi con tiếp theo vào để tránh nổ log
-    await new Promise(resolve => setTimeout(resolve, SETTINGS.loginDelay));
+// Khởi động bot từ từ để tránh bị "sốc" hệ thống
+async function run() {
+  for (let i = 1; i <= SERVER.count; i++) {
+    startBot(i);
+    await new Promise(res => setTimeout(res, 2000)); // Nghỉ 2s mỗi con
   }
 }
 
-startSpam();
+run();
 
-// --- WEB SERVER (Để treo trên Render/UptimeRobot) ---
+// Giữ cho Render sống
 const app = express();
-app.get("/", (req, res) => res.send("Bot System is Online!"));
-app.listen(process.env.PORT || 3000, () => console.log("Web Server Ready."));
+app.get("/", (req, res) => res.send("Hệ thống Bot đang chạy..."));
+app.listen(process.env.PORT || 3000);
