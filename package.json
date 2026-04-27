@@ -1,13 +1,13 @@
 {
-  "name": "minecraft-afk-150bot",
+  "name": "afk-bot",
   "version": "1.0.0",
+  "description": "",
   "main": "index.js",
-  "dependencies": {
-    "mineflayer": "^4.20.0",
-    "express": "^4.18.2",
-    "socks-proxy-agent": "^7.0.0"
-  },
   "scripts": {
     "start": "node index.js"
+  },
+  "dependencies": {
+    "mineflayer": "^4.35.0",
+    "express": "^4.19.2"
   }
 }
