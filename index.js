@@ -1,66 +1,85 @@
-          const mineflayer = require('mineflayer');
-          const http = require('http');
+const mineflayer = require("mineflayer")
+const express = require("express")
 
-          // 1. WEB SERVER GIỮ BOT ONLINE
-          http.createServer((req, res) => {
-              res.writeHead(200, { 'Content-Type': 'text/plain' });
-              res.end('Bot Army is running!');
-          }).listen(process.env.PORT || 10000);
+let bot = null
 
-          const config = {
-              host: "darkblademc.joinmc.world",
-              port: 20674,
-              version: "1.21.1",
-              password: "matkhauchung123"
-          };
+function startBot() {
 
-          const MAX_BOTS = 5; 
+  console.log("Đang khởi động bot...")
 
-          function createBot(index) {
-              const botName = `SuperBot_${index}`;
-              const bot = mineflayer.createBot({
-                  host: config.host,
-                  port: config.port,
-                  username: botName,
-                  version: config.version,
-                  hideErrors: true
-              });
+  bot = mineflayer.createBot({
+    host: "191.96.231.27",
+    port: 10570,
+    username: "Anh_Nho_BloxFruit",
+    version: "1.20.1"
+  })
 
-              bot.on('spawn', () => {
-                  console.log(`[${botName}] ✅ Đã vào đội hình!`);
-                  setTimeout(() => {
-                      bot.chat(`/register ${config.password} ${config.password}`);
-                      bot.chat(`/login ${config.password}`);
-                  }, 2000);
+  bot.on("login", () => {
+    console.log("Bot đã login server")
+  })
 
-                  const actionInterval = setInterval(() => {
-                      if (!bot.entity) return;
-                      const r = Math.random();
-                      if (r < 0.5) {
-                          bot.setControlState('jump', true);
-                          setTimeout(() => bot.setControlState('jump', false), 500);
-                      } else {
-                          bot.chat(`Checking server status... [AFK Bot #${index}]`);
-                      }
-                  }, 15000 + (index * 1000));
+  bot.on("spawn", () => {
 
-                  setTimeout(() => {
-                      clearInterval(actionInterval);
-                      bot.quit();
-                  }, 1200000);
-              });
+    console.log("Bot đã vào world")
 
-              bot.on('end', () => {
-                  console.log(`[${botName}] ❌ Thoát. Hồi sinh sau 30s...`);
-                  setTimeout(() => createBot(index), 30000);
-              });
+    // chống AFK
+    setInterval(() => {
 
-              bot.on('error', (err) => console.log(`[${botName}] Lỗi: ${err.message}`));
-          }
+      if (!bot.entity) return
 
-          // Chạy vòng lặp khởi tạo bot
-          for (let i = 1; i <= MAX_BOTS; i++) {
-              setTimeout(() => {
-                  createBot(i);
-              }, i * 15000);
-          }
+      bot.setControlState("jump", true)
+
+      setTimeout(() => {
+        bot.setControlState("jump", false)
+      }, 300)
+
+    }, 5000)
+
+  })
+
+  bot.on("messagestr", (msg) => {
+
+    if (msg.includes("/register")) {
+      bot.chat("/register thien24092012 thien24092012")
+    }
+
+    if (msg.includes("/login")) {
+      bot.chat("/login thien24092012")
+    }
+
+  })
+
+  bot.on("kicked", (reason) => {
+    console.log("Bot bị kick:", reason)
+  })
+
+  bot.on("error", (err) => {
+    console.log("Lỗi:", err.message)
+  })
+
+  bot.on("end", () => {
+
+    console.log("Bot mất kết nối, reconnect sau 30s...")
+
+    setTimeout(() => {
+      startBot()
+    }, 30000)
+
+  })
+
+}
+
+startBot()
+
+// web server cho UptimeRobot
+const app = express()
+
+app.get("/", (req, res) => {
+  res.send("bot online")
+})
+
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log("Web server chạy port", PORT)
+})
