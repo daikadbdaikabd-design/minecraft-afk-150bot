@@ -8,9 +8,9 @@ function startBot() {
   console.log("Đang khởi động bot...")
 
   bot = mineflayer.createBot({
-    host: "chanbomayde.joinmc.world",
-    port: 20674,
-    username: "Anh_Nho_BloxFruit",
+    host: "15.235.217.54",
+    port: 14317,
+    username: "Pigs_god",
     version: "1.20.1"
   })
 
